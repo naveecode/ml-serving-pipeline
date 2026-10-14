@@ -1,36 +1,70 @@
-"""Build the static GitHub Pages demo: real training metrics, latency and an Evidently drift report."""
+"""Build the static GitHub Pages demo.
+
+Uses the committed training metrics, latency numbers and an Evidently drift report.
+"""
+
 from __future__ import annotations
-import json, sys
+
+import json
+import sys
 from pathlib import Path
+from string import Template
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+
 from churn.drift import load_feature_csv, render_report  # noqa: E402
 
 OUT = ROOT / "site"
-OUT.mkdir(exist_ok=True)
-m = json.loads((ROOT / "reports/training_metrics.json").read_text())
-lat = json.loads((ROOT / "reports/latency.json").read_text())
-v = ROOT / "models/versions" / m["version"]
-html, summary = render_report(load_feature_csv(v / "baseline_current.csv"), load_feature_csv(v / "reference.csv"))
-(OUT / "drift.html").write_text(html)
-(OUT / ".nojekyll").write_text("")
-row = lambda k, val: f"<tr><td>{k}</td><td>{val}</td></tr>"
-feats = "".join(row(f["feature"], f"{f['gain']:.3f}") for f in m["top_features"])
-drift = "".join(row(k, val) for k, val in summary.items() if not isinstance(val, (dict, list)))
-s, c = lat["sequential"], lat["concurrent"]
-(OUT / "index.html").write_text(f"""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ml-serving-pipeline demo</title><style>body{{font-family:system-ui;max-width:900px;margin:2rem auto;padding:0 1rem;color:#111}}table{{border-collapse:collapse;margin:.5rem 0 1.5rem}}td{{border:1px solid #ddd;padding:.3rem .6rem}}code{{background:#f3f3f3;padding:0 .3rem}}</style>
-<script type="module">import m from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";m.initialize({{startOnLoad:true}});</script></head><body>
-<h1>ml-serving-pipeline</h1><p>Telco churn: Pandera validation, XGBoost tuned with Optuna, MLflow registry, FastAPI serving, MongoDB prediction log, Evidently drift, Docker/K8s.
-<a href="https://github.com/naveecode/ml-serving-pipeline">Source on GitHub</a>. Static demo built from committed artifacts by CI; the live API is not hosted.</p>
-<h2>Model v{m['version']} (held-out test, n={m['n_test']})</h2><table>{row('ROC AUC', f"{m['roc_auc']:.3f}")}{row('Average precision', f"{m['average_precision']:.3f}")}{row('Precision @0.5', f"{m['precision_at_0_5']:.3f}")}{row('Recall @0.5', f"{m['recall_at_0_5']:.3f}")}{row('Brier', f"{m['brier']:.3f}")}{row('Optuna trials', m['n_trials'])}</table>
-<h3>Top features (gain)</h3><table>{feats}</table>
-<h2>Latency (/predict, local loopback, one uvicorn worker)</h2><table>{row('Sequential p50 / p95 ms', f"{s['p50_ms']:.1f} / {s['p95_ms']:.1f}")}{row(f"{c['workers']} concurrent clients p50 / p95 ms", f"{c['p50_ms']:.1f} / {c['p95_ms']:.1f}")}</table><p><small>{lat['note']}</small></p>
-<h2>Drift (held-out baseline vs training reference)</h2><table>{drift}</table><p><a href="drift.html">Full Evidently report</a></p>
-<h2>Architecture</h2><pre class="mermaid">flowchart LR
-  csv[Telco CSV] --> val[Pandera] --> train[XGBoost + Optuna] --> mlflow[MLflow registry]
-  mlflow --> api[FastAPI /predict /predict/batch /model]
-  api --> mongo[(MongoDB prediction log)]
-  mongo --> drift[Evidently /drift]
-  api --> k8s[Docker / K8s HPA]</pre></body></html>""")
-print("site built", summary)
+
+
+def row(key: object, value: object) -> str:
+    return f"<tr><td>{key}</td><td>{value}</td></tr>"
+
+
+def main() -> None:
+    OUT.mkdir(exist_ok=True)
+    m = json.loads((ROOT / "reports/training_metrics.json").read_text())
+    lat = json.loads((ROOT / "reports/latency.json").read_text())
+    version_dir = ROOT / "models/versions" / m["version"]
+    current = load_feature_csv(version_dir / "baseline_current.csv")
+    reference = load_feature_csv(version_dir / "reference.csv")
+    html, summary = render_report(current, reference)
+    (OUT / "drift.html").write_text(html)
+    (OUT / ".nojekyll").write_text("")
+
+    seq, conc = lat["sequential"], lat["concurrent"]
+    metrics = [
+        ("ROC AUC", f"{m['roc_auc']:.3f}"),
+        ("Average precision", f"{m['average_precision']:.3f}"),
+        ("Precision @0.5", f"{m['precision_at_0_5']:.3f}"),
+        ("Recall @0.5", f"{m['recall_at_0_5']:.3f}"),
+        ("Brier", f"{m['brier']:.3f}"),
+        ("Optuna trials", m["n_trials"]),
+    ]
+    latency = [
+        ("Sequential p50 / p95 ms", f"{seq['p50_ms']:.1f} / {seq['p95_ms']:.1f}"),
+        (
+            f"{conc['workers']} concurrent clients p50 / p95 ms",
+            f"{conc['p50_ms']:.1f} / {conc['p95_ms']:.1f}",
+        ),
+    ]
+    drift_rows = [
+        ("Drifted columns", int(summary["drifted_columns"])),
+        ("Drift share", f"{summary['drift_share']:.3f}"),
+    ]
+    page = Template((ROOT / "scripts/site_template.html").read_text()).substitute(
+        version=m["version"],
+        n_test=m["n_test"],
+        metrics="".join(row(k, v) for k, v in metrics),
+        features="".join(row(f["feature"], f"{f['gain']:.3f}") for f in m["top_features"]),
+        latency="".join(row(k, v) for k, v in latency),
+        latency_note=lat["note"],
+        drift="".join(row(k, v) for k, v in drift_rows),
+    )
+    (OUT / "index.html").write_text(page)
+    print("site built:", dict(drift_rows))
+
+
+if __name__ == "__main__":
+    main()
