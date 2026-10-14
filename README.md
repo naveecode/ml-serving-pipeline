@@ -1,5 +1,7 @@
 # Telco churn scoring service
 
+**Live demo (static, GitHub Pages):** https://naveecode.github.io/ml-serving-pipeline/
+
 A small production-style path for the IBM telco customer churn table: Pandera checks the frame, Optuna tunes an XGBoost classifier, MLflow tracks the run and registers it, and FastAPI serves single and batch scores. Predictions are written to MongoDB. `/drift` builds an Evidently data-drift report from the training reference and either recent logged scores or the held-out baseline. The same image runs under Docker Compose, a kustomize bundle (Deployment, Service, HPA), and the Render and Fly configs.
 
 ## Measured results
