@@ -1,0 +1,32 @@
+app = "telco-churn-api"
+primary_region = "iad"
+
+[build]
+
+[env]
+  PORT = "8000"
+  MODEL_DIR = "/app/models"
+  MONGODB_DB = "churn"
+  MONGODB_COLLECTION = "predictions"
+  PREDICT_THRESHOLD = "0.5"
+  DRIFT_MIN_ROWS = "50"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "15s"
+    method = "GET"
+    path = "/health"
+    timeout = "5s"
+
+[[vm]]
+  memory = "2gb"
+  cpu_kind = "shared"
+  cpus = 1

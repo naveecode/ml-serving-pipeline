@@ -1,0 +1,14 @@
+# Runtime pins. Keep in sync with [project].dependencies in pyproject.toml.
+fastapi==0.143.1
+uvicorn[standard]==0.54.0
+pydantic==2.14.1
+pandas==3.0.6
+numpy==2.5.4
+scikit-learn==1.9.1
+xgboost==3.4.1
+optuna==5.0.0
+mlflow==3.17.1
+pandera[pandas]==0.34.1
+evidently==0.7.23
+pymongo==4.18.3
+joblib==1.6.0

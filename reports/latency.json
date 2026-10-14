@@ -1,0 +1,35 @@
+{
+  "measured_at": "2026-10-14T13:42:56.272311+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "endpoint": "/predict",
+  "model_version": "1",
+  "mongodb_uri": "mongodb://127.0.0.1:27017",
+  "sequential_logged": 300,
+  "concurrent_logged": 320,
+  "warmup_requests": 30,
+  "cpu_model": "Intel(R) Xeon(R) Processor",
+  "cpu_count": 4,
+  "python": "3.12.3",
+  "platform": "Linux-6.12.94+-x86_64-with-glibc2.39",
+  "note": "Loopback HTTP against one local uvicorn process. Not a production SLO.",
+  "sequential": {
+    "requests": 300,
+    "min_ms": 26.667909000025247,
+    "p50_ms": 28.50868849998278,
+    "p95_ms": 35.15168425013826,
+    "p99_ms": 43.35807680010702,
+    "max_ms": 49.940697000010914,
+    "mean_ms": 29.488487876671268
+  },
+  "concurrent": {
+    "workers": 8,
+    "requests_per_worker": 40,
+    "requests": 320,
+    "min_ms": 65.89299500001289,
+    "p50_ms": 305.5977215000212,
+    "p95_ms": 401.3908911001409,
+    "p99_ms": 513.1730935699647,
+    "max_ms": 571.8159400000786,
+    "mean_ms": 312.6470682874995
+  }
+}

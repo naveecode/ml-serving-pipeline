@@ -1,0 +1,15 @@
+.git
+.venv
+**/__pycache__
+.pytest_cache
+.ruff_cache
+.mypy_cache
+mlruns
+mlflow.db
+tests
+reports
+k8s
+deploy
+locust
+**/*.md
+.env
