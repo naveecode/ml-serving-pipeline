@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "churn-service"
+version = "1.0.0"
+description = "Telco churn scoring API with validation, tuning, tracking, and drift monitoring."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi==0.143.1",
+  "uvicorn[standard]==0.54.0",
+  "pydantic==2.14.1",
+  "pandas==3.0.6",
+  "numpy==2.5.4",
+  "scikit-learn==1.9.1",
+  "xgboost==3.4.1",
+  "optuna==5.0.0",
+  "mlflow==3.17.1",
+  "pandera[pandas]==0.34.1",
+  "evidently==0.7.23",
+  "pymongo==4.18.3",
+  "joblib==1.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mongomock==4.3.0",
+  "pytest==9.1.1",
+  "httpx==0.28.1",
+  "ruff==0.17.0",
+  "locust==2.46.7",
+]
+
+[project.scripts]
+churn-train = "churn.train:main"
+churn-api = "churn.api:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "locust", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+"src/churn/api.py" = ["B008"]

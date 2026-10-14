@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: churn-api
+    runtime: docker
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: churn
+      - key: MONGODB_COLLECTION
+        value: predictions
+      - key: MODEL_DIR
+        value: /app/models
+      - key: PREDICT_THRESHOLD
+        value: "0.5"
+      - key: DRIFT_MIN_ROWS
+        value: "50"

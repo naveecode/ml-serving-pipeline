@@ -1,0 +1,75 @@
+{
+  "average_precision": 0.6586597583370019,
+  "best_n_estimators": 45,
+  "brier": 0.16310526430606842,
+  "created_at": "2026-10-14T13:29:56.929732+00:00",
+  "log_loss": 0.4843711853027344,
+  "mlflow_model_version": "1",
+  "mlflow_run_id": "e6cfd563cfaf4940920c02d4f240a9ee",
+  "mlflow_tracking_uri": "sqlite:///mlflow.db",
+  "n_rows": 7043,
+  "n_test": 1409,
+  "n_train": 5634,
+  "n_trials": 25,
+  "params": {
+    "colsample_bytree": 0.7293016342019151,
+    "gamma": 0.8803049874792026,
+    "learning_rate": 0.1777933581403786,
+    "max_depth": 3,
+    "min_child_weight": 7,
+    "n_estimators": 45,
+    "reg_lambda": 2.3359635026261603,
+    "subsample": 0.7913841307520112
+  },
+  "positive_rate": 0.2653698707936959,
+  "precision_at_0_5": 0.5121527777777778,
+  "quick": false,
+  "recall_at_0_5": 0.7887700534759359,
+  "roc_auc": 0.8459208452814592,
+  "scale_pos_weight": 2.768561872909699,
+  "threshold": 0.5,
+  "top_features": [
+    {
+      "feature": "cat__Contract_Month-to-month",
+      "gain": 0.2933812141418457
+    },
+    {
+      "feature": "cat__OnlineSecurity_No",
+      "gain": 0.15447311103343964
+    },
+    {
+      "feature": "cat__Contract_Two year",
+      "gain": 0.07815061509609222
+    },
+    {
+      "feature": "cat__InternetService_Fiber optic",
+      "gain": 0.05312715098261833
+    },
+    {
+      "feature": "cat__PaymentMethod_Electronic check",
+      "gain": 0.04609116166830063
+    },
+    {
+      "feature": "cat__TechSupport_No",
+      "gain": 0.04465591162443161
+    },
+    {
+      "feature": "cat__Contract_One year",
+      "gain": 0.03712945058941841
+    },
+    {
+      "feature": "cat__InternetService_DSL",
+      "gain": 0.03590533882379532
+    },
+    {
+      "feature": "cat__StreamingTV_Yes",
+      "gain": 0.02971416525542736
+    },
+    {
+      "feature": "cat__StreamingMovies_Yes",
+      "gain": 0.024834144860506058
+    }
+  ],
+  "val_roc_auc": 0.8570234113712374,
+  "version": "1"
+}
