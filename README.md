@@ -31,6 +31,8 @@ Latency is loopback HTTP to one local uvicorn process on this machine (Intel Xeo
 
 The API process handles requests synchronously, so the 8-client figure is mostly queueing on one worker. Repeat the measurement with `python scripts/bench_latency.py` against a running server and replace both JSON files and this section together. `tests/test_published_metrics.py` fails if the README drifts from the files.
 
+Slice metrics, base rates, and the limits of this fit are in `MODEL_CARD.md`. `tests/test_model_card.py` recomputes the holdout from the production pipeline and fails if the card drifts.
+
 Worked example, first CSV row (customer `7590-VHVEG`), model version 1: churn probability **0.8539**, label `true` at threshold 0.5.
 
 ## Architecture
@@ -87,6 +89,8 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db
 
 `mlflow.db` and `mlruns/` are local and gitignored. The run id above is the one that produced the committed model.
 
+`.github/workflows/retrain.yml` runs every Monday at 06:17 UTC, and on manual dispatch. It retrains on `data/Telco-Customer-Churn.csv` with the same 25-trial command and passes `--promote-if-better`. The file-registry production pointer and the MLflow `production` alias move only when the new test ROC AUC is strictly higher than the registered model's. An equal score keeps the registered model. When the run does promote, the job commits `models/` and pushes that commit.
+
 ## API
 
 | Method | Path | Behavior |
@@ -106,16 +110,35 @@ Pydantic rejects a malformed body with 422. Pandera runs again inside the scorer
 
 ```bash
 docker build -t churn-api:local .
-kind create cluster --name churn
+kind create cluster --name churn --config k8s/kind-config.yaml
 kind load docker-image churn-api:local --name churn
+kubectl apply -f k8s/metrics-server/components.yaml
 kubectl apply -k k8s/overlays/kind
 kubectl rollout status deployment/churn-api
 kubectl port-forward svc/churn-api 8000:80
 ```
 
-`scripts/kind_smoke.sh` does that sequence and calls `/health`, `/model`, and `/predict`. The base bundle is a Deployment (2 replicas, CPU request so the HPA can scale), a ClusterIP Service, an HPA at 70% CPU (min 2, max 8), and a Secret for `MONGODB_URI`. The kind overlay pins 1 replica and an HPA range of 1–3. The Secret value in git is the placeholder `mongodb://mongodb:27017`. Swap it for an Atlas URI using `deploy/atlas.md` before expecting prediction logs.
+`scripts/kind_smoke.sh` does that sequence. `k8s/kind-config.yaml` sets kube-proxy to nftables and the node image to `kindest/node:v1.33.1`. The script installs metrics-server v0.9.0 from `k8s/metrics-server/components.yaml` (`--kubelet-insecure-tls`, which kind needs for the kubelet certificate), loads the image into the node, and waits until `kubectl top` returns CPU for `churn-api`. The kind overlay also starts MongoDB 7.0 as Service `mongodb` on port 27017, which is the URI already in the Secret, so `/predict` can log instead of waiting out a failed connection. The script then calls `/health`, `/model`, and `/predict`, and applies `k8s/overlays/kind/locust-job.yaml`: a Locust 2.46.7 Job, 40 users, spawn rate 10, 3 minutes, host `http://churn-api`.
 
-That script was run here on kind v0.29.0 with node image `kindest/node:v1.33.1`. The Deployment became Ready, and `/health`, `/model`, and `/predict` returned model version 1. The HPA object was created. Its CPU target stayed `<unknown>` because that cluster does not run metrics-server, so it did not scale.
+The base bundle is a Deployment (2 replicas, CPU request so the HPA can scale), a ClusterIP Service, an HPA at 70% CPU (min 2, max 8), and a Secret for `MONGODB_URI`. The kind overlay pins 1 replica and an HPA range of 1–3. Swap the Secret for an Atlas URI using `deploy/atlas.md` when this bundle leaves kind.
+
+The measured kind run is in [Kind HPA run](#kind-hpa-run). `reports/kind_hpa.json` is what that script wrote, and `tests/test_published_metrics.py` checks that this section quotes it.
+
+## Kind HPA run
+
+`scripts/kind_smoke.sh` wrote `reports/kind_hpa.json` on 2026-10-16. kind v0.29.0, kubelet v1.33.1, node image `kindest/node:v1.33.1`, kube-proxy in nftables mode, metrics-server `registry.k8s.io/metrics-server/metrics-server:v0.9.0`. The Locust 2.46.7 job used 40 users, spawn rate 10, and a 3 minute run against `http://churn-api`.
+
+| | |
+| --- | ---: |
+| Requests | 3834 |
+| Failures | 0 |
+| Final aggregate rate | 21.32 req/s |
+| Aggregate median | 1800 ms |
+| `GET /health` | 425 requests, median 59 ms |
+| `POST /predict` | 2500 requests, median 1900 ms |
+| `POST /predict/batch` | 909 requests, median 1900 ms |
+
+Ready replicas were 1 before the job. At 02:08:48Z the HPA set desired replicas to 3, with average CPU at 292% of the 250m request and the only pod at its 1000m limit. Three pods were Ready at 02:08:58Z. The peak average utilization in the samples was 400% at 02:09:08Z. From 02:09:29Z through the last sample at 02:11:12Z the average stayed at 133% and desired stayed at 3: `kubectl top` showed one pod at 1000m and the other two at 2m. 133% is above the 70% target, so the deployment was still at 3 ready replicas when the job stopped. Every sample is in the JSON file.
 
 ## Load test
 
@@ -123,7 +146,7 @@ That script was run here on kind v0.29.0 with node image `kindest/node:v1.33.1`.
 locust -f locust/locustfile.py --host http://127.0.0.1:8000
 ```
 
-The locust file posts the same example customer used above, plus a batch of two rows, and checks `/health`.
+The locust file posts the same example customer used above, plus a batch of two rows, and checks `/health`. The kind script runs the same tasks from `k8s/overlays/kind/locust-job.yaml` inside the cluster, with a shorter wait so the pods can cross the HPA CPU target.
 
 ## Deploy
 
@@ -146,17 +169,18 @@ ruff check src tests locust scripts
 ruff format --check src tests locust scripts
 ```
 
-GitHub Actions runs those checks and `docker build`. Pytest covers the Pandera schema on the full 7,043-row file, the preprocessor, registry rollback, the API with mongomock (predict, batch, rollback, drift), a Mongo-down path that still scores, and a 500-row / 2-trial training run that must beat 0.5 ROC AUC and register an MLflow `production` alias.
+GitHub Actions runs those checks and `docker build` on every push and pull request. A separate scheduled workflow, `.github/workflows/retrain.yml`, retrains on the sample and promotes only when test ROC AUC improves. Pytest covers the Pandera schema on the full 7,043-row file, the preprocessor, registry rollback, the API with mongomock (predict, batch, rollback, drift), a Mongo-down path that still scores, a 500-row / 2-trial training run that must beat 0.5 ROC AUC and register an MLflow `production` alias, the promote-if-better gate against a seeded registry, and the model-card slice numbers.
 
 ## Layout
 
 ```text
-src/churn/          schema, training, registry, API, drift
+src/churn/          schema, training, registry, API, drift, fairness slices
 data/               IBM telco extract and source note
 models/versions/1/  committed pipeline, metrics, drift reference
-reports/            training metrics and latency bench
-k8s/                kustomize base and kind overlay
+reports/            training metrics, latency bench, kind HPA run
+k8s/                kustomize base, kind overlay, metrics-server
 locust/             load test
+MODEL_CARD.md       data, metrics, limitations, contract and senior slices
 deploy/atlas.md     Atlas connection notes
 ```
 

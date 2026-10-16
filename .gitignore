@@ -7,6 +7,7 @@ __pycache__/
 mlruns/
 mlflow.db
 mlflow.db-journal
+retrain_result.json
 *.egg-info/
 dist/
 build/

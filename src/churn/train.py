@@ -167,6 +167,25 @@ def classification_metrics(y_true: pd.Series, probabilities: np.ndarray) -> dict
     }
 
 
+def registered_roc_auc(model_dir: Path) -> float | None:
+    """ROC AUC of the file-registry production model, or None when nothing is registered."""
+    registry = load_registry(model_dir)
+    version = registry.get("production")
+    if not version:
+        return None
+    raw = registry["versions"][version].get("roc_auc")
+    if raw is None:
+        raise ValueError(f"production version {version} has no roc_auc to compare")
+    return float(raw)
+
+
+def should_promote(candidate_auc: float, registered_auc: float | None) -> bool:
+    """Promote when no model is registered, or the candidate test ROC AUC is strictly higher."""
+    if registered_auc is None:
+        return True
+    return float(candidate_auc) > float(registered_auc)
+
+
 def top_features(pipeline: Pipeline, limit: int = 10) -> list[dict[str, float | str]]:
     preprocessor = pipeline.named_steps["prep"]
     model = pipeline.named_steps["model"]
@@ -232,6 +251,7 @@ def train(
     artifact_dir: Path = Path("mlruns"),
     quick: bool = False,
     promote: bool = True,
+    promote_if_better: bool = False,
     random_state: int = 42,
 ) -> dict[str, Any]:
     """Validate, tune on an inner split, score once on a held-out test set, and register."""
@@ -286,6 +306,11 @@ def train(
     pipeline = fit_final_pipeline(x_train, y_train, final_params)
     test_probabilities = pipeline.predict_proba(x_test)[:, 1]
     scored = classification_metrics(y_test, test_probabilities)
+    registered_auc = registered_roc_auc(model_dir)
+    if promote_if_better:
+        promote = should_promote(scored["roc_auc"], registered_auc)
+    has_production = registered_auc is not None
+    will_promote = bool(promote or not has_production)
 
     import mlflow
     from mlflow.models import infer_signature
@@ -316,13 +341,13 @@ def train(
             ],
         )
         model_version = info.registered_model_version
-        if model_version is not None:
-            from mlflow.tracking import MlflowClient
-
-            MlflowClient(tracking_uri).set_registered_model_alias(
-                MODEL_NAME, "production", str(model_version)
-            )
         run_id = run.info.run_id
+    if will_promote and model_version is not None:
+        from mlflow.tracking import MlflowClient
+
+        MlflowClient(tracking_uri).set_registered_model_alias(
+            MODEL_NAME, "production", str(model_version)
+        )
 
     from datetime import datetime
 
@@ -343,6 +368,8 @@ def train(
         "created_at": datetime.now(UTC).isoformat(),
         "quick": quick,
         "top_features": top_features(pipeline),
+        "registered_roc_auc": registered_auc,
+        "promoted": will_promote,
     }
     version = persist_version(
         model_dir=model_dir,
@@ -351,7 +378,7 @@ def train(
         params=final_params,
         reference=_cap(x_train, REFERENCE_CAP, random_state),
         baseline_current=_cap(x_test, BASELINE_CAP, random_state),
-        promote=promote,
+        promote=will_promote,
     )
     metrics["version"] = version
     logger.info("registered version %s test ROC AUC %.4f", version, metrics["roc_auc"])
@@ -372,7 +399,15 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--artifact-dir", type=Path, default=Path("mlruns"))
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--no-promote", action="store_true")
+    parser.add_argument(
+        "--promote-if-better",
+        action="store_true",
+        help="Point production at this run only when its test ROC AUC exceeds the registered model",
+    )
+    parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args(argv)
+    if args.promote_if_better and args.no_promote:
+        parser.error("--promote-if-better cannot be combined with --no-promote")
     result = train(
         args.data,
         args.model_dir,
@@ -382,8 +417,12 @@ def main(argv: list[str] | None = None) -> None:
         artifact_dir=args.artifact_dir,
         quick=args.quick,
         promote=not args.no_promote,
+        promote_if_better=args.promote_if_better,
     )
-    print(json.dumps(result, indent=2))
+    rendered = json.dumps(result, indent=2)
+    if args.output is not None:
+        args.output.write_text(rendered + "\n")
+    print(rendered)
 
 
 if __name__ == "__main__":

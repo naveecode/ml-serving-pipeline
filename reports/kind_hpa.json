@@ -1,0 +1,219 @@
+{
+  "kind_version": "kind v0.29.0 go1.24.2 linux/amd64",
+  "node_image": "kindest/node:v1.33.1",
+  "kubelet_version": "v1.33.1",
+  "metrics_server_image": "registry.k8s.io/metrics-server/metrics-server:v0.9.0",
+  "locust_image": "locustio/locust:2.46.7",
+  "locust_args": [
+    "-f",
+    "/locust/locustfile.py",
+    "--headless",
+    "--users",
+    "40",
+    "--spawn-rate",
+    "10",
+    "--run-time",
+    "3m",
+    "--host",
+    "http://churn-api"
+  ],
+  "locust_requests": 3834,
+  "locust_failures": 0,
+  "locust_rps": 21.32,
+  "locust_median_ms": 1800,
+  "locust_endpoints": {
+    "GET /health": {
+      "requests": 425,
+      "failures": 0,
+      "median_ms": 59,
+      "rps": 2.36
+    },
+    "POST /predict": {
+      "requests": 2500,
+      "failures": 0,
+      "median_ms": 1900,
+      "rps": 13.9
+    },
+    "POST /predict/batch": {
+      "requests": 909,
+      "failures": 0,
+      "median_ms": 1900,
+      "rps": 5.05
+    }
+  },
+  "replicas_ready_before": 1,
+  "replicas_ready_max": 3,
+  "desired_replicas_max": 3,
+  "average_utilization_max": 400,
+  "samples": [
+    {
+      "ts": "2026-10-16T02:08:07Z",
+      "ready": 1,
+      "current_replicas": 1,
+      "desired_replicas": 0,
+      "average_utilization": null,
+      "top": "churn-api-798844466f-zng4m   225m   230Mi"
+    },
+    {
+      "ts": "2026-10-16T02:08:07Z",
+      "ready": 1,
+      "current_replicas": 1,
+      "desired_replicas": 0,
+      "average_utilization": null,
+      "top": "churn-api-798844466f-zng4m   225m   230Mi"
+    },
+    {
+      "ts": "2026-10-16T02:08:17Z",
+      "ready": 1,
+      "current_replicas": 1,
+      "desired_replicas": 0,
+      "average_utilization": null,
+      "top": "churn-api-798844466f-zng4m   2m    230Mi"
+    },
+    {
+      "ts": "2026-10-16T02:08:28Z",
+      "ready": 1,
+      "current_replicas": 1,
+      "desired_replicas": 0,
+      "average_utilization": null,
+      "top": "churn-api-798844466f-zng4m   2m    230Mi"
+    },
+    {
+      "ts": "2026-10-16T02:08:38Z",
+      "ready": 1,
+      "current_replicas": 1,
+      "desired_replicas": 1,
+      "average_utilization": 0,
+      "top": "churn-api-798844466f-zng4m   731m   259Mi"
+    },
+    {
+      "ts": "2026-10-16T02:08:48Z",
+      "ready": 1,
+      "current_replicas": 1,
+      "desired_replicas": 3,
+      "average_utilization": 292,
+      "top": "churn-api-798844466f-zng4m   1000m   259Mi"
+    },
+    {
+      "ts": "2026-10-16T02:08:58Z",
+      "ready": 3,
+      "current_replicas": 1,
+      "desired_replicas": 3,
+      "average_utilization": 292,
+      "top": "churn-api-798844466f-zng4m   1000m   259Mi"
+    },
+    {
+      "ts": "2026-10-16T02:09:08Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 400,
+      "top": "churn-api-798844466f-fgmsn   226m   230Mi   \nchurn-api-798844466f-wtpvg   359m   230Mi   \nchurn-api-798844466f-zng4m   992m   260Mi"
+    },
+    {
+      "ts": "2026-10-16T02:09:19Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 396,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   260Mi"
+    },
+    {
+      "ts": "2026-10-16T02:09:29Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 133,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   260Mi"
+    },
+    {
+      "ts": "2026-10-16T02:09:39Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 133,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   260Mi"
+    },
+    {
+      "ts": "2026-10-16T02:09:49Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 133,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   260Mi"
+    },
+    {
+      "ts": "2026-10-16T02:10:00Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 133,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   260Mi"
+    },
+    {
+      "ts": "2026-10-16T02:10:10Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 133,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   260Mi"
+    },
+    {
+      "ts": "2026-10-16T02:10:20Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 133,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   260Mi"
+    },
+    {
+      "ts": "2026-10-16T02:10:30Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 133,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   260Mi"
+    },
+    {
+      "ts": "2026-10-16T02:10:41Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 133,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   260Mi"
+    },
+    {
+      "ts": "2026-10-16T02:10:51Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 133,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   260Mi"
+    },
+    {
+      "ts": "2026-10-16T02:11:01Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 133,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   261Mi"
+    },
+    {
+      "ts": "2026-10-16T02:11:11Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 133,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   261Mi"
+    },
+    {
+      "ts": "2026-10-16T02:11:12Z",
+      "ready": 3,
+      "current_replicas": 3,
+      "desired_replicas": 3,
+      "average_utilization": 133,
+      "top": "churn-api-798844466f-fgmsn   2m      230Mi   \nchurn-api-798844466f-wtpvg   2m      230Mi   \nchurn-api-798844466f-zng4m   1000m   261Mi"
+    }
+  ],
+  "locust_log_tail": "GET      /health                                                                          421     0(0.00%) |     72       2     458     59 |    1.60        0.00\nPOST     /predict                                                                        2479     0(0.00%) |   2028     321    7125   1900 |   13.90        0.00\nPOST     /predict/batch                                                                   899     0(0.00%) |   2037     381    7248   1900 |    5.00        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      3799     0(0.00%) |   1814       2    7248   1800 |   20.50        0.00\n\n[2026-10-16 02:11:08,000] locust-dl7nw/INFO/locust.main: --run-time limit reached, shutting down\n[2026-10-16 02:11:08,018] locust-dl7nw/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      /health                                                                          425     0(0.00%) |     72       2     458     59 |    2.36        0.00\nPOST     /predict                                                                        2500     0(0.00%) |   2029     321    7125   1900 |   13.90        0.00\nPOST     /predict/batch                                                                   909     0(0.00%) |   2039     381    7248   1900 |    5.05        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      3834     0(0.00%) |   1814       2    7248   1800 |   21.32        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      /health                                                                                59     81     99    120    140    180    210    250    460    460    460    425\nPOST     /predict                                                                             1900   2100   2400   2500   3000   3500   4200   4700   6700   7100   7100   2500\nPOST     /predict/batch                                                                       1900   2100   2400   2600   3100   3500   3900   4400   7200   7200   7200    909\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           1800   2100   2300   2400   2900   3500   4100   4500   6700   7200   7200   3834\n"
+}
