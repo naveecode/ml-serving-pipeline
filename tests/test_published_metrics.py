@@ -32,3 +32,19 @@ def test_readme_quotes_files_from_the_training_run_and_latency_bench():
     scored, scored_version = ModelService(ROOT / "models").predict([EXAMPLE_CUSTOMER])
     assert scored_version == version
     assert f"{scored[0]['churn_probability']:.4f}" in readme
+
+    hpa = json.loads((ROOT / "reports" / "kind_hpa.json").read_text())
+    assert hpa["replicas_ready_max"] > hpa["replicas_ready_before"]
+    assert str(hpa["locust_requests"]) in readme
+    assert str(hpa["locust_failures"]) in readme
+    assert str(hpa["replicas_ready_before"]) in readme
+    assert str(hpa["replicas_ready_max"]) in readme
+    assert str(hpa["desired_replicas_max"]) in readme
+    assert str(hpa["average_utilization_max"]) in readme
+    assert f"{hpa['locust_rps']:.2f}" in readme
+    assert str(hpa["locust_median_ms"]) in readme
+    assert hpa["node_image"] in readme
+    assert hpa["metrics_server_image"] in readme
+    for endpoint in hpa["locust_endpoints"].values():
+        assert str(endpoint["requests"]) in readme
+        assert str(endpoint["median_ms"]) in readme

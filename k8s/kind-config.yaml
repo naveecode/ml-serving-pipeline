@@ -1,0 +1,9 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  # nftables kube-proxy. The iptables proxier needs the xt_statistic match,
+  # which is absent on some 6.12 kernels, and then ClusterIP never programs.
+  kubeProxyMode: nftables
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.33.1

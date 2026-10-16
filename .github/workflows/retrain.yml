@@ -1,0 +1,83 @@
+name: retrain
+
+on:
+  schedule:
+    # Monday 06:17 UTC, off the hour so the job is not stacked with other cron traffic.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install
+        run: pip install -e .
+      - name: Retrain on the sample and promote only if test ROC AUC is higher
+        id: retrain
+        run: |
+          python -m churn.train \
+            --data data/Telco-Customer-Churn.csv \
+            --n-trials 25 \
+            --promote-if-better \
+            --output retrain_result.json
+          python - <<'PY'
+          import json
+          import os
+
+          result = json.loads(open("retrain_result.json").read())
+          promoted = "true" if result["promoted"] else "false"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as handle:
+              handle.write(f"promoted={promoted}\n")
+          PY
+      - name: Record the comparison
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          result = json.loads(open("retrain_result.json").read())
+          registered = result["registered_roc_auc"]
+          registered_text = "none" if registered is None else f"{registered:.4f}"
+          summary = (
+              "### Retrain\n\n"
+              f"- Candidate test ROC AUC: {result['roc_auc']:.4f}\n"
+              f"- Registered production ROC AUC: {registered_text}\n"
+              f"- Promoted: {result['promoted']}\n"
+          )
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as handle:
+              handle.write(summary)
+          print(summary)
+          PY
+      - name: Upload the comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: retrain-result
+          path: retrain_result.json
+      - name: Commit the promoted model
+        if: steps.retrain.outputs.promoted == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add models
+          python - <<'PY'
+          import json
+          import subprocess
+
+          result = json.loads(open("retrain_result.json").read())
+          message = (
+              f"Promote churn model version {result['version']}\n\n"
+              f"Test ROC AUC {result['roc_auc']:.4f} is above the registered "
+              f"{result['registered_roc_auc']:.4f}."
+          )
+          subprocess.run(["git", "commit", "-m", message], check=True)
+          PY
+          git push
