@@ -2,11 +2,15 @@
 
 **Live demo (static, GitHub Pages):** https://naveecode.github.io/ml-serving-pipeline/
 
+![Static GitHub Pages demo: held-out metrics, feature gains, latency, drift, and the serving diagram](docs/pages-demo.png)
+
 A small production-style path for the IBM telco customer churn table: Pandera checks the frame, Optuna tunes an XGBoost classifier, MLflow tracks the run and registers it, and FastAPI serves single and batch scores. Predictions are written to MongoDB. `/drift` builds an Evidently data-drift report from the training reference and either recent logged scores or the held-out baseline. The same image runs under Docker Compose, a kustomize bundle (Deployment, Service, HPA), and the Render and Fly configs.
 
 ## Measured results
 
 Numbers below are copied from `reports/training_metrics.json` and `reports/latency.json`. Classification metrics are shown to 4 decimal places. Latencies are shown to 2 decimal places. Both files keep full precision.
+
+![Test ROC AUC 0.8459 and loopback /predict p95: 35.15 ms with one client, 401.39 ms with 8 clients](docs/metrics.png)
 
 Training run `e6cfd563cfaf4940920c02d4f240a9ee` (MLflow model version 1), 2026-10-14. Stratified 80/20 holdout, `random_state=42`, 7,043 rows (5,634 train / 1,409 test). Optuna TPE, 25 trials, early stopping on an inner 20% of the training split. The test set was scored once. Decision threshold is 0.5 and was not tuned. Positive rate in the full table is 0.2654.
 
@@ -39,15 +43,13 @@ Worked example, first CSV row (customer `7590-VHVEG`), model version 1: churn pr
 
 ```mermaid
 flowchart LR
-  csv[Telco CSV] --> schema[Pandera schema]
-  schema --> tune[XGBoost + Optuna]
-  tune --> mlflow[MLflow tracking and registry]
-  tune --> versions[Versioned model files]
-  client[Client] --> api[FastAPI]
-  versions --> api
-  api --> mongo[(MongoDB or Atlas)]
-  mongo --> drift[Evidently /drift]
-  versions --> drift
+  data[Telco data] --> val[Pandera validation]
+  val --> train[XGBoost + Optuna]
+  train --> mlflow[MLflow registry]
+  mlflow --> files[Versioned model files]
+  files --> api[FastAPI]
+  api --> mongo[(MongoDB logging)]
+  mongo --> drift[Evidently drift]
 ```
 
 Serving reads the file registry under `models/`, not the MLflow server. Training registers the pipeline and points the MLflow alias `production` at that version. Rollback updates the file registry and best-effort syncs the alias when `mlflow.db` is reachable. If MongoDB is down, scoring still returns and `logged` is `false`.
